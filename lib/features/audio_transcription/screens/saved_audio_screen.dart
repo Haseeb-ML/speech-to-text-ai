@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:share_plus/share_plus.dart';
 import '../providers/audio_provider.dart';
 import 'text_view_screen.dart';
 
@@ -152,7 +153,7 @@ class _AudioListItemState extends ConsumerState<AudioListItem> {
                 children: [
                   Text(
                     'Recording ${widget.displayIndex}', 
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -167,6 +168,13 @@ class _AudioListItemState extends ConsumerState<AudioListItem> {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                IconButton(
+                  icon: const Icon(Icons.share, color: Colors.green, size: 26),
+                  tooltip: 'Share Audio',
+                  onPressed: () {
+                    Share.shareXFiles([XFile(widget.audio.path)], text: 'Check out this audio recording!');
+                  },
+                ),
                 IconButton(
                   icon: const Icon(Icons.text_snippet, color: Color(0xFF0B5ED7), size: 26),
                   tooltip: 'View Text',

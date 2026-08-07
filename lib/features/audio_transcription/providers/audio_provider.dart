@@ -103,7 +103,14 @@ class AudioProvider extends StateNotifier<AudioState> {
 
         // Ab stream start karo bajaye direct record ke
         final stream = await _audioRecorder.startStream(
-          const RecordConfig(encoder: AudioEncoder.pcm16bits, sampleRate: 16000, numChannels: 1),
+          const RecordConfig(
+            encoder: AudioEncoder.pcm16bits, 
+            sampleRate: 16000, 
+            numChannels: 1,
+            echoCancel: true,
+            autoGain: true,
+            noiseSuppress: true,
+          ),
         );
         
         // Data aate hi file mein aur Deepgram ko bhejo

@@ -56,7 +56,46 @@ class TextViewScreen extends ConsumerWidget {
             icon: const Icon(Icons.share),
             tooltip: 'Share Text',
             onPressed: () {
-              Share.share(text, subject: 'Audio Transcription');
+              final speakers = _getSpeakers(text);
+              if (speakers.isEmpty) {
+                Share.share(text, subject: 'Audio Transcription');
+                return;
+              }
+              
+              showModalBottomSheet(
+                context: context,
+                builder: (context) {
+                  return SafeArea(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Text('What do you want to share?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.article),
+                          title: const Text('Share Complete Text'),
+                          onTap: () {
+                            Navigator.pop(context);
+                            Share.share(text, subject: 'Audio Transcription');
+                          },
+                        ),
+                        const Divider(),
+                        ...speakers.map((speaker) => ListTile(
+                          leading: const Icon(Icons.person, color: Colors.blue),
+                          title: Text('Share Only $speaker'),
+                          onTap: () {
+                            Navigator.pop(context);
+                            final speakerText = _extractTextForSpeaker(text, speaker);
+                            Share.share(speakerText, subject: '$speaker Transcription');
+                          },
+                        )).toList(),
+                      ],
+                    ),
+                  );
+                }
+              );
             },
           ),
         ],
@@ -96,4 +135,21 @@ class TextViewScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+List<String> _getSpeakers(String text) {
+  final regex = RegExp(r'Person [A-Z]');
+  final matches = regex.allMatches(text);
+  return matches.map((m) => m.group(0)!).toSet().toList()..sort();
+}
+
+String _extractTextForSpeaker(String text, String speaker) {
+  // Split by "Person " but keep the delimiter by using lookahead
+  final parts = text.split(RegExp(r'(?=Person [A-Z]:)'));
+  
+  final speakerParts = parts.where((p) => p.startsWith('$speaker:')).map((p) {
+      return p.trim();
+  }).toList();
+  
+  return speakerParts.join('\n\n');
 }
