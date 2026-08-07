@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/audio_provider.dart';
+import '../widgets/dialogue_text.dart';
 import 'text_view_screen.dart'; // Nayii screen ko import kiya
 
 class RecordAudioScreen extends ConsumerWidget {
@@ -20,7 +21,6 @@ class RecordAudioScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -70,16 +70,13 @@ class RecordAudioScreen extends ConsumerWidget {
             margin: const EdgeInsets.symmetric(horizontal: 15), // Margin kam kiya taake width zyada milay
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.grey.shade200,
+              color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(15),
             ),
             child: SingleChildScrollView(
-              child: Text(
-                state.transcribedText.isEmpty 
-                    ? "Live connection established...\nBolna shuru karein, text yahan aata jayega!" 
-                    : state.transcribedText,
-                style: const TextStyle(fontSize: 16, color: Colors.black87),
-                textAlign: TextAlign.center,
+              child: DialogueText(
+                text: state.transcribedText,
+                style: const TextStyle(fontSize: 16),
               ),
             ),
           ),

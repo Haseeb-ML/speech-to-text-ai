@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Copy ke liye
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../settings/providers/settings_provider.dart';
 import 'package:share_plus/share_plus.dart'; // Share ke liye
+import '../widgets/dialogue_text.dart'; 
 import '../providers/audio_provider.dart';
 import '../services/pdf_service.dart'; // PDF service
 
-class TextViewScreen extends StatelessWidget {
+class TextViewScreen extends ConsumerWidget {
   final String transcribedText;
 
   const TextViewScreen({super.key, required this.transcribedText});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // Current text get karne ke liye constructor se layenge
     final text = transcribedText;
 
@@ -79,9 +81,12 @@ class TextViewScreen extends StatelessWidget {
                 ],
               ),
               child: SingleChildScrollView(
-                child: Text(
-                  text.isEmpty ? 'No text transcribed yet...' : text,
-                  style: const TextStyle(fontSize: 16, height: 1.5),
+                child: DialogueText(
+                  text: text.isEmpty ? 'No text transcribed yet...' : text,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    height: 1.5,
+                  ),
                 ),
               ),
             ),

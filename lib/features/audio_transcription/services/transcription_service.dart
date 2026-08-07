@@ -43,12 +43,12 @@ class GroqHandler extends TranscriptionHandler {
 class GroqLlamaService {
   static Future<String> transliterateToRomanUrdu(String urduText, {String targetLanguage = 'Roman Urdu'}) async {
     try {
-      final apiKey = 'YOUR_GROQ_API_KEY'; // SECURITY: Replace with your actual key
+      final apiKey = 'YOUR_GROQ_API_KEY';
       final chatUri = Uri.parse('https://api.groq.com/openai/v1/chat/completions');
       
       final systemPrompt = targetLanguage == 'English' 
-        ? "You are a highly accurate translator. The user will provide a text in Hindi/Urdu. Translate it perfectly into pure English. Do NOT add any extra commentary, just return the translated English text."
-        : "You are an expert at transliterating text into natural Roman Urdu. The user will provide a text in Devanagari (Hindi) or Roman English. Convert it perfectly into Roman Urdu with correct spacing, punctuation, and grammar. Do not output anything else except the converted text.";
+        ? "You are a highly accurate translator. The user will provide a text in Hindi/Urdu. Translate it perfectly into pure English. If the text contains speaker labels like 'Person A:' or 'Person B:', you MUST format the output as a dialogue script with exactly TWO newlines between speakers (e.g., \n\nPerson A: Hello\n\nPerson B: Hi). Do NOT add any extra commentary, just return the translated English text."
+        : "You are an expert at transliterating text into natural Roman Urdu. The user will provide a text in Devanagari (Hindi) or Roman English. Convert it perfectly into Roman Urdu with correct spacing, punctuation, and grammar. If the text contains speaker labels like 'Person A:' or 'Person B:', you MUST format the output as a dialogue script with exactly TWO newlines between speakers (e.g., \n\nPerson A: Kiya haal hai?\n\nPerson B: Main theek). Do not output anything else except the converted text.";
 
       final requestBody = {
         "model": "llama-3.1-70b-versatile",
@@ -115,11 +115,13 @@ class LocalTransliterator {
 // ---------------------------------------------------------
 class DeepgramLiveService {
   IOWebSocketChannel? _channel;
-  final String _apiKey = '8abfb44fa02c63a45b2e091e9bf4e8cb2c6d7705';
+  final String _apiKey = 'YOUR_DEEPGRAM_API_KEY';
+  int _lastSpeaker = -1;
   
   void startStreaming(void Function(String partialText, bool isFinal) onTextReceived) {
+    _lastSpeaker = -1; // Reset speaker state
     try {
-      final uri = Uri.parse('wss://api.deepgram.com/v1/listen?model=nova-2&encoding=linear16&sample_rate=16000&channels=1&language=hi');
+      final uri = Uri.parse('wss://api.deepgram.com/v1/listen?model=nova-2&encoding=linear16&sample_rate=16000&channels=1&language=hi&diarize=true');
       
       _channel = IOWebSocketChannel.connect(
         uri,
@@ -132,12 +134,31 @@ class DeepgramLiveService {
         try {
           final data = jsonDecode(message);
           if (data['channel'] != null && data['channel']['alternatives'] != null) {
-            final transcript = data['channel']['alternatives'][0]['transcript'];
+            final words = data['channel']['alternatives'][0]['words'] as List<dynamic>?;
             final isFinal = data['is_final'] ?? false;
-            if (transcript != null && transcript.toString().isNotEmpty) {
-              // FORAN ROMAN URDU MEIN BADLO
-              final romanTranscript = LocalTransliterator.toRoman(transcript.toString());
-              onTextReceived(romanTranscript, isFinal);
+            
+            if (words != null && words.isNotEmpty) {
+              String formattedChunk = "";
+              int tempSpeaker = _lastSpeaker;
+              
+              for (var w in words) {
+                int speaker = w['speaker'] ?? 0;
+                String wordStr = w['punctuated_word'] ?? w['word'] ?? "";
+                
+                if (speaker != tempSpeaker) {
+                  final speakerChar = String.fromCharCode(65 + speaker); // 0 -> A, 1 -> B
+                  formattedChunk += "\n\nPerson $speakerChar: ";
+                  tempSpeaker = speaker;
+                }
+                formattedChunk += wordStr + " ";
+              }
+              
+              if (isFinal) {
+                _lastSpeaker = tempSpeaker;
+              }
+              
+              final romanTranscript = LocalTransliterator.toRoman(formattedChunk);
+              onTextReceived(romanTranscript + " ", isFinal);
             }
           }
         } catch (e) {
