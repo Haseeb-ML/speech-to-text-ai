@@ -1,0 +1,94 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Copy ke liye
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart'; // Share ke liye
+import '../providers/audio_provider.dart';
+import '../services/pdf_service.dart'; // PDF service
+
+class TextViewScreen extends StatelessWidget {
+  final String transcribedText;
+
+  const TextViewScreen({super.key, required this.transcribedText});
+
+  @override
+  Widget build(BuildContext context) {
+    // Current text get karne ke liye constructor se layenge
+    final text = transcribedText;
+
+    return Scaffold(
+      appBar: AppBar(
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context), // Wapis jane ke liye
+        ),
+        title: const Text(
+          'Final Text',
+          style: TextStyle(color: Color(0xFF0D47A1), fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        // Top right par Copy, Share aur PDF ke options
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.copy),
+            tooltip: 'Copy',
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: text));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Text copied to clipboard!')),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            tooltip: 'Save as PDF',
+            onPressed: () async {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Opening PDF...')),
+              );
+              // Humari pehlay se bani hui service use karte hain
+              await PdfService.viewPdf(text, 'transcription');
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.share),
+            tooltip: 'Share Text',
+            onPressed: () {
+              Share.share(text, subject: 'Audio Transcription');
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Container(height: 1, color: Colors.grey.shade200),
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              margin: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(15),
+                boxShadow: [
+                  BoxShadow(
+                    color: Theme.of(context).cardColor,
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: SingleChildScrollView(
+                child: Text(
+                  text.isEmpty ? 'No text transcribed yet...' : text,
+                  style: const TextStyle(fontSize: 16, height: 1.5),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+}
