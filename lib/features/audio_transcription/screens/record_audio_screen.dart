@@ -20,22 +20,21 @@ class RecordAudioScreen extends ConsumerWidget {
     final audioState = ref.watch(audioProvider);
 
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {}, 
         ),
-        title: const Text(
+        title: Text(
           'Audio to Text',
-          style: TextStyle(color: Color(0xFF0D47A1), fontWeight: FontWeight.bold, fontSize: 22),
+          style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontWeight: FontWeight.bold, fontSize: 22),
         ),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(height: 1, color: Colors.grey.shade200),
-          
           // Agar recording start ho gayi hai toh naya UI show karo, warna purana default UI
           if (audioState.isRecording || audioState.audioPath != null)
             Expanded(child: _buildRecordingLayout(context, ref, audioState))
@@ -73,11 +72,10 @@ class RecordAudioScreen extends ConsumerWidget {
               color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(15),
             ),
-            child: SingleChildScrollView(
-              child: DialogueText(
-                text: state.transcribedText,
-                style: const TextStyle(fontSize: 16),
-              ),
+            child: AutoScrollTextBox(
+              text: state.transcribedText.isEmpty 
+                  ? 'Listening...\n\n(Aapka text yahan show hoga)' 
+                  : state.transcribedText,
             ),
           ),
         ),
@@ -299,6 +297,51 @@ class _AnimatedWaveformState extends State<AnimatedWaveform> with SingleTickerPr
             ),
           );
         }),
+      ),
+    );
+  }
+}
+
+class AutoScrollTextBox extends StatefulWidget {
+  final String text;
+  const AutoScrollTextBox({super.key, required this.text});
+
+  @override
+  State<AutoScrollTextBox> createState() => _AutoScrollTextBoxState();
+}
+
+class _AutoScrollTextBoxState extends State<AutoScrollTextBox> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void didUpdateWidget(AutoScrollTextBox oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.text != oldWidget.text) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      controller: _scrollController,
+      child: DialogueText(
+        text: widget.text,
+        style: const TextStyle(fontSize: 16),
       ),
     );
   }

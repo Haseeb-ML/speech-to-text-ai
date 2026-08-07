@@ -26,6 +26,7 @@ class AudioState {
   final String transcribedText;
   final int recordDuration; // Timer ke seconds
   final List<SavedAudio> savedAudios; // Saved audios list
+  final List<SavedAudio> historyAudios; // All past sessions (History)
 
   AudioState({
     this.isRecording = false,
@@ -34,6 +35,7 @@ class AudioState {
     this.transcribedText = '',
     this.recordDuration = 0,
     this.savedAudios = const [],
+    this.historyAudios = const [],
   });
 
   AudioState copyWith({
@@ -44,6 +46,7 @@ class AudioState {
     String? transcribedText,
     int? recordDuration,
     List<SavedAudio>? savedAudios,
+    List<SavedAudio>? historyAudios,
   }) {
     return AudioState(
       isRecording: isRecording ?? this.isRecording,
@@ -52,6 +55,7 @@ class AudioState {
       transcribedText: transcribedText ?? this.transcribedText,
       recordDuration: recordDuration ?? this.recordDuration,
       savedAudios: savedAudios ?? this.savedAudios,
+      historyAudios: historyAudios ?? this.historyAudios,
     );
   }
 }
@@ -108,8 +112,8 @@ class AudioProvider extends StateNotifier<AudioState> {
             sampleRate: 16000, 
             numChannels: 1,
             echoCancel: true,
-            autoGain: true,
-            noiseSuppress: true,
+            autoGain: false,      // AutoGain merges voice pitches, breaking diarization
+            noiseSuppress: false, // Heavy noise suppression alters voice frequency
           ),
         );
         
@@ -166,19 +170,41 @@ class AudioProvider extends StateNotifier<AudioState> {
     
     final realPath = _currentFile?.path;
     if (realPath != null) {
-      state = state.copyWith(isRecording: false, isPaused: false, audioPath: realPath);
+      state = state.copyWith(
+        isRecording: false, 
+        isPaused: false, 
+        audioPath: realPath,
+        transcribedText: "Aawaz convert ho chuki hai. High-accuracy diarization chal rahi hai...\n\nRaw:\n${state.transcribedText}"
+      );
       
-      // Ab humein poora text Urdu script mein mil chuka hai (Live Deepgram se)
-      final urduText = state.transcribedText;
-      if (urduText.isNotEmpty) {
-        // UI mein dikhao ke ab Roman Urdu mein convert ho raha hai
-        state = state.copyWith(transcribedText: "Aawaz convert ho chuki hai. Ab text refine ho raha hai...\n\nRaw:\n$urduText");
-        
+      // Use Deepgram REST API on the complete WAV file for 100% accurate diarization
+      String finalUrduText = state.transcribedText;
+      try {
+        final accurateText = await DeepgramLiveService.transcribeFile(File(realPath));
+        if (accurateText != null && accurateText.trim().isNotEmpty) {
+          finalUrduText = accurateText;
+        }
+      } catch (e) {
+        print("Fallback to live text because REST API failed: $e");
+      }
+
+      if (finalUrduText.isNotEmpty) {
         // Settings se language uthao (Roman Urdu ya English)
         final targetLang = ref.read(settingsProvider).language;
         
-        final finalRes = await GroqLlamaService.transliterateToRomanUrdu(urduText, targetLanguage: targetLang);
-        state = state.copyWith(transcribedText: finalRes);
+        final finalRes = await GroqLlamaService.transliterateToRomanUrdu(finalUrduText, targetLanguage: targetLang);
+        
+        final historyAudio = SavedAudio(
+          path: realPath,
+          text: finalRes,
+          duration: state.recordDuration,
+          date: DateTime.now(),
+        );
+        
+        state = state.copyWith(
+          transcribedText: finalRes,
+          historyAudios: [historyAudio, ...state.historyAudios],
+        );
       }
     } else {
       state = state.copyWith(isRecording: false, isPaused: false);

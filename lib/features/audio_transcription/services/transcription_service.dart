@@ -43,7 +43,7 @@ class GroqHandler extends TranscriptionHandler {
 class GroqLlamaService {
   static Future<String> transliterateToRomanUrdu(String urduText, {String targetLanguage = 'Roman Urdu'}) async {
     try {
-      final apiKey = 'YOUR_GROQ_API_KEY';
+      final apiKey = 'YOUR_API_KEY_HERE'; // GitHub push protection was blocking the real key
       final chatUri = Uri.parse('https://api.groq.com/openai/v1/chat/completions');
       
       final systemPrompt = targetLanguage == 'English' 
@@ -115,7 +115,7 @@ class LocalTransliterator {
 // ---------------------------------------------------------
 class DeepgramLiveService {
   IOWebSocketChannel? _channel;
-  final String _apiKey = 'YOUR_DEEPGRAM_API_KEY';
+  final String _apiKey = '8abfb44fa02c63a45b2e091e9bf4e8cb2c6d7705';
   int _lastSpeaker = -1;
   
   void startStreaming(void Function(String partialText, bool isFinal) onTextReceived) {
@@ -184,6 +184,45 @@ class DeepgramLiveService {
         _channel = null;
       });
     }
+  }
+
+  // Pre-recorded API (REST) for 100% accurate diarization at the end
+  static Future<String?> transcribeFile(File audioFile) async {
+    try {
+      final uri = Uri.parse('https://api.deepgram.com/v1/listen?model=nova-2&language=hi&diarize=true&punctuate=true&smart_format=true');
+      final request = http.Request('POST', uri)
+        ..headers['Authorization'] = 'Token 8abfb44fa02c63a45b2e091e9bf4e8cb2c6d7705'
+        ..headers['Content-Type'] = 'audio/wav'
+        ..bodyBytes = await audioFile.readAsBytes();
+
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+      final data = jsonDecode(responseBody);
+      
+      final words = data['results']?['channels']?[0]?['alternatives']?[0]?['words'] as List<dynamic>?;
+      
+      if (words != null && words.isNotEmpty) {
+        String formattedChunk = "";
+        int tempSpeaker = -1;
+        
+        for (var w in words) {
+          int speaker = w['speaker'] ?? 0;
+          String wordStr = w['punctuated_word'] ?? w['word'] ?? "";
+          
+          if (speaker != tempSpeaker) {
+            final speakerChar = String.fromCharCode(65 + speaker);
+            formattedChunk += "\n\nPerson $speakerChar: ";
+            tempSpeaker = speaker;
+          }
+          formattedChunk += wordStr + " ";
+        }
+        
+        return LocalTransliterator.toRoman(formattedChunk);
+      }
+    } catch (e) {
+      print("Pre-recorded API error: $e");
+    }
+    return null;
   }
 }
 

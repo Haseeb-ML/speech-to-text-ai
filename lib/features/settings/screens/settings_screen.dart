@@ -86,8 +86,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final themeNotifier = ref.read(settingsProvider.notifier);
 
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Settings', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          'Settings', 
+          style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontWeight: FontWeight.bold, fontSize: 22)
+        ),
         centerTitle: true,
       ),
       body: ListView(
@@ -110,38 +114,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 30),
 
-          // Language Settings
-          const Text("Output Language", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue)),
-          const SizedBox(height: 10),
-          Card(
-            elevation: 2,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("Select translation mode:"),
-                  const SizedBox(height: 10),
-                  RadioListTile<String>(
-                    title: const Text("Roman Urdu (English alphabets)"),
-                    value: "Roman Urdu",
-                    groupValue: settings.language,
-                    onChanged: (val) {
-                      if (val != null) themeNotifier.setLanguage(val);
-                    },
-                  ),
-                  RadioListTile<String>(
-                    title: const Text("Pure English (Translation)"),
-                    value: "English",
-                    groupValue: settings.language,
-                    onChanged: (val) {
-                      if (val != null) themeNotifier.setLanguage(val);
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
           const SizedBox(height: 30),
 
           // Storage Settings

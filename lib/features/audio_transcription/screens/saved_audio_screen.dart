@@ -19,17 +19,17 @@ class SavedAudioScreen extends ConsumerWidget {
     final savedAudios = ref.watch(audioProvider).savedAudios;
 
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Saved Audios',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+          style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontWeight: FontWeight.bold, fontSize: 22),
         ),
         centerTitle: true,
       ),
       body: Column(
         children: [
-          Container(height: 1, color: Colors.grey.shade200),
           Expanded(
             child: savedAudios.isEmpty
                 ? const Center(

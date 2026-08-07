@@ -18,15 +18,17 @@ class TextViewScreen extends ConsumerWidget {
     final text = transcribedText;
 
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context), // Wapis jane ke liye
         ),
-        title: const Text(
+        title: Text(
           'Final Text',
-          style: TextStyle(color: Color(0xFF0D47A1), fontWeight: FontWeight.bold),
+          style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontWeight: FontWeight.bold, fontSize: 22),
         ),
         centerTitle: true,
         // Top right par Copy, Share aur PDF ke options
@@ -35,10 +37,12 @@ class TextViewScreen extends ConsumerWidget {
             icon: const Icon(Icons.copy),
             tooltip: 'Copy',
             onPressed: () {
-              Clipboard.setData(ClipboardData(text: text));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Text copied to clipboard!')),
-              );
+              _showActionSheet(context, text, 'copy', (selectedText) {
+                Clipboard.setData(ClipboardData(text: selectedText));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Text copied to clipboard!')),
+                );
+              });
             },
           ),
           IconButton(
@@ -56,64 +60,26 @@ class TextViewScreen extends ConsumerWidget {
             icon: const Icon(Icons.share),
             tooltip: 'Share Text',
             onPressed: () {
-              final speakers = _getSpeakers(text);
-              if (speakers.isEmpty) {
-                Share.share(text, subject: 'Audio Transcription');
-                return;
-              }
-              
-              showModalBottomSheet(
-                context: context,
-                builder: (context) {
-                  return SafeArea(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.all(16.0),
-                          child: Text('What do you want to share?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.article),
-                          title: const Text('Share Complete Text'),
-                          onTap: () {
-                            Navigator.pop(context);
-                            Share.share(text, subject: 'Audio Transcription');
-                          },
-                        ),
-                        const Divider(),
-                        ...speakers.map((speaker) => ListTile(
-                          leading: const Icon(Icons.person, color: Colors.blue),
-                          title: Text('Share Only $speaker'),
-                          onTap: () {
-                            Navigator.pop(context);
-                            final speakerText = _extractTextForSpeaker(text, speaker);
-                            Share.share(speakerText, subject: '$speaker Transcription');
-                          },
-                        )).toList(),
-                      ],
-                    ),
-                  );
-                }
-              );
+              _showActionSheet(context, text, 'share', (selectedText) {
+                Share.share(selectedText, subject: 'Audio Transcription');
+              });
             },
           ),
         ],
       ),
       body: Column(
         children: [
-          Container(height: 1, color: Colors.grey.shade200),
           Expanded(
             child: Container(
               width: double.infinity,
               margin: const EdgeInsets.all(20),
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(15),
                 boxShadow: [
                   BoxShadow(
-                    color: Theme.of(context).cardColor,
+                    color: Theme.of(context).shadowColor.withOpacity(0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 5),
                   ),
@@ -122,9 +88,10 @@ class TextViewScreen extends ConsumerWidget {
               child: SingleChildScrollView(
                 child: DialogueText(
                   text: text.isEmpty ? 'No text transcribed yet...' : text,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     height: 1.5,
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
                   ),
                 ),
               ),
@@ -135,6 +102,49 @@ class TextViewScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+void _showActionSheet(BuildContext context, String text, String actionTitle, void Function(String) onAction) {
+  final speakers = _getSpeakers(text);
+  if (speakers.isEmpty) {
+    onAction(text);
+    return;
+  }
+  
+  showModalBottomSheet(
+    context: context,
+    builder: (context) {
+      return SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text('What do you want to $actionTitle?', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.article),
+              title: const Text('Complete Text'),
+              onTap: () {
+                Navigator.pop(context);
+                onAction(text);
+              },
+            ),
+            const Divider(),
+            ...speakers.map((speaker) => ListTile(
+              leading: const Icon(Icons.person, color: Colors.blue),
+              title: Text('Only $speaker'),
+              onTap: () {
+                Navigator.pop(context);
+                final speakerText = _extractTextForSpeaker(text, speaker);
+                onAction(speakerText);
+              },
+            )).toList(),
+          ],
+        ),
+      );
+    }
+  );
 }
 
 List<String> _getSpeakers(String text) {

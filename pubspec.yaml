@@ -60,6 +60,7 @@ dependencies:
   audioplayers: ^6.8.1
   web_socket_channel: ^3.0.3
   shared_preferences: ^2.5.5
+  intl: ^0.20.3
 
 dev_dependencies:
   flutter_test:

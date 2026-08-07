@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../audio_transcription/screens/record_audio_screen.dart';
 import '../../audio_transcription/screens/saved_audio_screen.dart';
+import '../../audio_transcription/screens/history_screen.dart';
 import '../../settings/screens/settings_screen.dart';
 
 class MainNavScreen extends StatefulWidget {
@@ -16,7 +17,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
   List<Widget> get _screens => [
     const RecordAudioScreen(),
     const SavedAudioScreen(),
-    const Center(child: Text("History Screen (Coming Soon)")),
+    const HistoryScreen(),
     const SettingsScreen(),
   ];
 
@@ -32,16 +33,20 @@ class _MainNavScreenState extends State<MainNavScreen> {
           });
         },
         type: BottomNavigationBarType.fixed,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        elevation: 0,
+        useLegacyColorScheme: false,
+        selectedFontSize: 0,
+        unselectedFontSize: 0,
         showSelectedLabels: false,
         showUnselectedLabels: false,
-        elevation: 10,
         items: [
-          _buildNavItem(Icons.mic, 0),
-          _buildNavItem(Icons.folder_outlined, 1),
-          _buildNavItem(Icons.history, 2),
-          _buildNavItem(Icons.settings_outlined, 3),
-        ],
-      ),
+            _buildNavItem(Icons.mic, 0),
+            _buildNavItem(Icons.folder_outlined, 1),
+            _buildNavItem(Icons.history, 2),
+            _buildNavItem(Icons.settings_outlined, 3),
+          ],
+        ),
     );
   }
 
